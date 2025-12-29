@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Поиск по почтовым индексам</title>
+    <style>
+        :root {
+            --color-primary: rgb(33, 128, 141);
+            --color-bg: rgb(252, 252, 249);
+            --color-surface: rgb(255, 255, 253);
+            --color-text: rgb(19, 52, 59);
+            --color-text-secondary: rgb(98, 108, 113);
+            --color-border: rgba(94, 82, 64, 0.2);
+            --color-success: rgb(33, 128, 141);
+            --color-error: rgb(192, 21, 47);
+            --color-warning: rgb(168, 75, 47);
+            --radius: 8px;
+            --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--color-bg);
+            color: var(--color-text);
+            margin: 0;
+            padding: 20px;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            margin: 0 0 10px 0;
+            font-size: 28px;
+            color: var(--color-text);
+        }
+
+        .subtitle {
+            color: var(--color-text-secondary);
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius);
+            font-family: monospace;
+            font-size: 14px;
+            background: var(--color-surface);
+            color: var(--color-text);
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(33, 128, 141, 0.1);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            background: var(--color-primary);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 200ms;
+        }
+
+        .btn:hover {
+            background: rgb(29, 116, 128);
+        }
+
+        .btn:active {
+            background: rgb(26, 104, 115);
+        }
+
+        .btn:disabled {
+            background: var(--color-text-secondary);
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .status-message {
+            margin-top: 20px;
+            padding: 12px 16px;
+            border-radius: var(--radius);
+            font-size: 14px;
+        }
+
+        .status-message.loading {
+            background: rgba(33, 128, 141, 0.1);
+            color: var(--color-primary);
+        }
+
+        .status-message.error {
+            background: rgba(192, 21, 47, 0.1);
+            color: var(--color-error);
+        }
+
+        .status-message.success {
+            background: rgba(33, 128, 141, 0.1);
+            color: var(--color-success);
+        }
+
+        .results-wrapper {
+            margin-top: 30px;
+        }
+
+        .results-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--color-text);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        thead {
+            background: rgba(33, 128, 141, 0.05);
+            border-bottom: 2px solid var(--color-border);
+        }
+
+        th {
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--color-text);
+        }
+
+        td {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--color-border);
+            font-size: 14px;
+        }
+
+        tbody tr:hover {
+            background: rgba(33, 128, 141, 0.02);
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .export-btn {
+            margin-top: 16px;
+            padding: 10px 16px;
+            background: white;
+            color: var(--color-primary);
+            border: 1px solid var(--color-primary);
+            border-radius: var(--radius);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 200ms;
+        }
+
+        .export-btn:hover {
+            background: rgba(33, 128, 141, 0.05);
+        }
+
+        .help-text {
+            font-size: 12px;
+            color: var(--color-text-secondary);
+            margin-top: 6px;
+        }
+
+        .error-row {
+            background: rgba(192, 21, 47, 0.05);
+            color: var(--color-error);
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(33, 128, 141, 0.2);
+            border-top-color: var(--color-primary);
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Поиск по почтовым индексам</h1>
+        <p class="subtitle">Введите почтовые индексы через запятую для получения информации о районе и области</p>
+
+        <div class="form-group">
+            <label for="indices">Почтовые индексы (через запятую)</label>
+            <textarea
+                id="indices"
+                placeholder="Например: 624053, 119991, 190000"
+            ></textarea>
+            <p class="help-text">Каждый индекс должен состоять из 6 цифр</p>
+        </div>
+
+        <button class="btn" onclick="handleSearch()">Поиск информации</button>
+
+        <div id="status"></div>
+
+        <div id="results" class="results-wrapper" style="display: none;">
+            <div class="results-title">Результаты поиска</div>
+            <table id="resultsTable">
+                <thead>
+                    <tr>
+                        <th>Индекс</th>
+                        <th>Город</th>
+                        <th>Район</th>
+                        <th>Область</th>
+                    </tr>
+                </thead>
+                <tbody id="resultsBody">
+                </tbody>
+            </table>
+            <button class="export-btn" onclick="exportToCSV()">📥 Скачать CSV</button>
+        </div>
+    </div>
+
+    <script>
+        const statusEl = document.getElementById('status');
+        const resultsEl = document.getElementById('results');
+        const resultsBodyEl = document.getElementById('resultsBody');
+
+        function showStatus(message, type = 'loading') {
+            statusEl.innerHTML = `<div class="status-message ${type}">
+                ${type === 'loading' ? '<span class="loading-spinner"></span> ' : ''}
+                ${message}
+            </div>`;
+        }
+
+        function clearStatus() {
+            statusEl.innerHTML = '';
+        }
+
+        function parseIndices(input) {
+            return input
+                .split(',')
+                .map(index => index.trim())
+                .filter(index => index.length > 0);
+        }
+
+        function validateIndex(index) {
+            return /^\d{6}$/.test(index);
+        }
+
+        function buildApiUrl(index) {
+            const first3 = index.substring(0, 3);
+            const last3 = index.substring(3, 6);
+            return `https://sanmai.github.io/pindx/json/${first3}/${first3}${last3}.json`;
+        }
+
+        async function fetchPostalData(index) {
+            try {
+                const url = buildApiUrl(index);
+                const response = await fetch(url);
+
+                if (!response.ok) {
+                    return {
+                        index,
+                        city: 'Не найдено',
+                        area: 'Не найдено',
+                        region: 'Не найдено',
+                        error: true
+                    };
+                }
+
+                const data = await response.json();
+                return {
+                    index,
+                    city: data.City || 'Не указано',
+                    area: data.Area || 'Не указано',
+                    region: data.Region || 'Не указано',
+                    error: false
+                };
+            } catch (error) {
+                console.error(`Error fetching data for ${index}:`, error);
+                return {
+                    index,
+                    city: 'Ошибка загрузки',
+                    area: 'Ошибка загрузки',
+                    region: 'Ошибка загрузки',
+                    error: true
+                };
+            }
+        }
+
+        async function handleSearch() {
+            const input = document.getElementById('indices').value;
+            const indices = parseIndices(input);
+
+            if (indices.length === 0) {
+                showStatus('Пожалуйста, введите хотя бы один почтовый индекс', 'error');
+                return;
+            }
+
+            // Validate indices
+            const invalidIndices = indices.filter(idx => !validateIndex(idx));
+            if (invalidIndices.length > 0) {
+                showStatus(`Некорректные индексы: ${invalidIndices.join(', ')}. Индексы должны содержать 6 цифр`, 'error');
+                return;
+            }
+
+            showStatus(`Загрузка данных для ${indices.length} индекса(ов)...`);
+            resultsEl.style.display = 'none';
+
+            try {
+                const results = await Promise.all(
+                    indices.map(index => fetchPostalData(index))
+                );
+
+                displayResults(results);
+                clearStatus();
+                resultsEl.style.display = 'block';
+
+                const errorCount = results.filter(r => r.error).length;
+                if (errorCount > 0) {
+                    showStatus(`Завершено с ошибками. Загружено: ${results.length - errorCount}/${results.length}`, 'error');
+                } else {
+                    showStatus(`Успешно загружено ${results.length} записей`, 'success');
+                }
+            } catch (error) {
+                showStatus('Произошла ошибка при обработке запроса', 'error');
+                console.error('Search error:', error);
+            }
+        }
+
+        function displayResults(results) {
+            resultsBodyEl.innerHTML = results.map(result => {
+                const rowClass = result.error ? 'error-row' : '';
+                return `<tr class="${rowClass}">
+                    <td>${result.index}</td>
+                    <td>${result.city}</td>
+                    <td>${result.area}</td>
+                    <td>${result.region}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        function exportToCSV() {
+            const rows = resultsBodyEl.querySelectorAll('tr');
+            if (rows.length === 0) {
+                alert('Нет данных для экспорта');
+                return;
+            }
+
+            let csv = 'Индекс,Город,Район,Область\n';
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                const index = cells[0].textContent;
+                const city = cells[1].textContent;
+                const area = cells[2].textContent;
+                const region = cells[3].textContent;
+                csv += `"${index}","${city}","${area}","${region}"\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'postal_codes.csv');
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Allow Enter key in textarea for submission
+        document.getElementById('indices').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                handleSearch();
+            }
+        });
+    </script>
+</body>
+</html>
